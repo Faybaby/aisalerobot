@@ -1,0 +1,10 @@
+{
+  "model_name": "gpt-4.1-nano-2025-04-14",
+  "api_key": "sk-zG0enfxULdk2Up3X2sEFc8KJyqBRPfVoPkGiquPb81rH422m",
+  "base_url": "https://api.openai-proxy.org/v1",
+  "c_prompt": "请在此处填写人设提示词",
+  "add_prompt": "请在此处填写新增客户提示词",
+  "edit_prompt": "请在此处填写更新修改提示词",
+  "serach_prompt": "请在此处填写查询提示词",
+  "json_prompt": "请在此处填写录入json提示词"
+}

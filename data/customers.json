@@ -1,0 +1,32 @@
+[
+  {
+    "id": "cus002",
+    "name": "未来动力",
+    "source": "展会",
+    "contact": "contact@fd.com",
+    "requirement": "AI本地化",
+    "last_meeting": "2025-05-22",
+    "next_followup": "2025-05-26",
+    "stage": "方案演示"
+  },
+  {
+    "id": "cus001",
+    "name": "猪猪侠集团",
+    "source": "官网",
+    "contact": "sales@xg.com",
+    "requirement": "K8S支持",
+    "last_meeting": "2025-05-21",
+    "next_followup": "2025-05-24",
+    "stage": "需求沟通"
+  },
+  {
+    "id": "cusd0706b",
+    "name": "prompt黑匣子",
+    "source": "展会",
+    "contact": "970641347@qq.com",
+    "requirement": "没意向",
+    "last_meeting": "2025-05-24",
+    "next_followup": "2025-05-27",
+    "stage": "合同签署"
+  }
+]
