@@ -28,5 +28,15 @@
     "last_meeting": "2025-05-24",
     "next_followup": "2025-05-27",
     "stage": "合同签署"
+  },
+  {
+    "id": "cus0a5120",
+    "name": "1",
+    "source": "官网",
+    "contact": "13009393964",
+    "requirement": "2",
+    "last_meeting": "2025-05-24",
+    "next_followup": "2025-05-15",
+    "stage": "需求沟通"
   }
 ]

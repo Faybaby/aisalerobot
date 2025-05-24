@@ -1,12 +1,14 @@
 import json
 import os
 from flask import Flask, request, jsonify
-from utils.json_db import JsonDatabase
-from auth import require_auth
+from utils.json_db import JsonDB
+from auth import token_required
 from openai import OpenAI
+import uuid
+from datetime import datetime
 
 app = Flask(__name__)
-db = JsonDatabase('data/customers.json')
+db = JsonDB('data/customers.json')
 
 # Load configuration from config.json
 config = {}
@@ -31,38 +33,6 @@ if config.get('api_key') and config.get('base_url'):
     )
 else:
     print("Warning: OpenAI API key or base URL not found in config.json. Chatbot functionality will be limited.")
-
-# Chat endpoint
-@app.route('/api/chat', methods=['POST'])
-def chat():
-    if not openai_client:
-        return jsonify({"error": "OpenAI client not initialized."}), 500
-
-    data = request.json
-    user_message = data.get('message')
-    # conversation_history = data.get('history', []) # Assuming history might be sent from frontend
-
-    if not user_message:
-        return jsonify({"error": "No message provided."}), 400
-
-    # Basic API call using a general prompt for now
-    # TODO: Implement more sophisticated prompt selection and history management based on dialogue state
-    try:
-        # Example API call (adjust parameters as needed)
-        response = openai_client.chat.completions.create(
-            model=config.get('model_name', 'gpt-3.5-turbo'), # Use model from config, default if not found
-            messages=[
-                {"role": "system", "content": config.get('c_prompt', 'You are a helpful assistant.')},
-                # Add conversation history here if available
-                {"role": "user", "content": user_message}
-            ]
-        )
-        ai_response = response.choices[0].message.content
-        return jsonify({"response": ai_response})
-
-    except Exception as e:
-        print(f"Error calling OpenAI API: {e}")
-        return jsonify({"error": "Error processing chat message."}), 500
 
 # 登录接口
 @app.route('/api/auth/login', methods=['POST'])
@@ -89,7 +59,7 @@ def login():
 @app.route('/api/customers', methods=['GET'])
 @token_required
 def get_all_customers():
-    customers = customers_db.get_all()
+    customers = db.get_all()
     return jsonify(customers)
 
 # 搜索客户
@@ -100,7 +70,7 @@ def search_customers():
     if not query:
         return jsonify([])
     
-    customers = customers_db.get_all()
+    customers = db.get_all()
     results = []
     
     for customer in customers:
@@ -116,7 +86,7 @@ def search_customers():
 @app.route('/api/customers/<id>', methods=['GET'])
 @token_required
 def get_customer(id):
-    customer = customers_db.get_by_id(id)
+    customer = db.get_by_id(id)
     if not customer:
         return jsonify({
             'status': 'error',
@@ -164,7 +134,7 @@ def add_customer():
     }
     
     # 保存到JSON文件
-    customers_db.add(customer)
+    db.add(customer)
     
     return jsonify({
         'status': 'ok',
@@ -177,7 +147,7 @@ def add_customer():
 @token_required
 def update_customer(id):
     data = request.get_json()
-    customer = customers_db.get_by_id(id)
+    customer = db.get_by_id(id)
     
     if not customer:
         return jsonify({
@@ -192,7 +162,7 @@ def update_customer(id):
             customer[key] = value
     
     # 保存更新
-    customers_db.update(customer)
+    db.update(customer)
     
     return jsonify({
         'status': 'ok',
@@ -204,7 +174,7 @@ def update_customer(id):
 @app.route('/api/customers/<id>', methods=['DELETE'])
 @token_required
 def delete_customer(id):
-    customer = customers_db.get_by_id(id)
+    customer = db.get_by_id(id)
     
     if not customer:
         return jsonify({
@@ -214,7 +184,7 @@ def delete_customer(id):
         }), 404
     
     # 删除客户
-    customers_db.delete(id)
+    db.delete(id)
     
     return jsonify({
         'status': 'ok',
@@ -228,19 +198,52 @@ def chatbot():
     data = request.get_json()
     user_message = data.get('message', '')
 
-    # Simple mock response based on user input
-    if '你好' in user_message:
-        bot_response = '你好！有什么可以帮您？'
-    elif '客户' in user_message:
-        bot_response = '您可以问我关于客户信息、销售记录等问题。'
-    elif '谢谢' in user_message:
-        bot_response = '不客气！'
-    else:
-        bot_response = '抱歉，我暂时无法回答这个问题。您可以问我关于客户相关的问题。'
+    if not openai_client:
+        return jsonify({"error": "OpenAI client not initialized."}), 500
+
+    if not user_message:
+        return jsonify({"error": "No message provided."}), 400
+
+    try:
+        response = openai_client.chat.completions.create(
+            model=config.get('model_name', 'gpt-3.5-turbo'),
+            messages=[
+                {"role": "system", "content": config.get('c_prompt', 'You are a helpful assistant.')},
+                {"role": "user", "content": user_message}
+            ]
+        )
+        ai_response_content = response.choices[0].message.content
+
+        # Attempt to parse the response as JSON
+        try:
+            ai_response_json = json.loads(ai_response_content)
+            bot_text = ai_response_json.get('text', '...') # Default text if parsing fails or text is missing
+            bot_tone = ai_response_json.get('tone', 'normal') # Default tone
+        except json.JSONDecodeError:
+            # If response is not valid JSON, use the raw text and default tone
+            print(f"Warning: AI response is not valid JSON: {ai_response_content}")
+            bot_text = ai_response_content
+            bot_tone = 'normal'
+
+    except Exception as e:
+        print(f"Error calling OpenAI API: {e}")
+        # Add more detailed logging here
+        print(f"Detailed OpenAI API error: {type(e).__name__} - {e}")
+        # Write error to a log file
+        try:
+            with open('openai_error.log', 'a', encoding='utf-8') as log_file:
+                log_file.write(f"{datetime.now()} - Error calling OpenAI API: {type(e).__name__} - {e}\n")
+        except Exception as log_err:
+            print(f"Error writing to log file: {log_err}")
+        bot_text = '发送消息失败，请稍后再试。'
+        bot_tone = 'error'
 
     return jsonify({
         'status': 'ok',
-        'response': bot_response
+        'response': {
+            'text': bot_text,
+            'tone': bot_tone
+        }
     })
 
 if __name__ == '__main__':

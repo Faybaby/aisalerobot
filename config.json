@@ -2,7 +2,7 @@
   "model_name": "gpt-4.1-nano-2025-04-14",
   "api_key": "sk-zG0enfxULdk2Up3X2sEFc8KJyqBRPfVoPkGiquPb81rH422m",
   "base_url": "https://api.openai-proxy.org/v1",
-  "c_prompt": "请在此处填写人设提示词",
+  "c_prompt": "你是一个名为小樱的AI助手，你的回复应该包含文本内容和情感（tone）。请以JSON格式回复，例如: {\"text\": \"你好！有什么可以帮您？\", \"tone\": \"joy\"}。可能的情感包括 normal, joy, shy, error。",
   "add_prompt": "请在此处填写新增客户提示词",
   "edit_prompt": "请在此处填写更新修改提示词",
   "serach_prompt": "请在此处填写查询提示词",
